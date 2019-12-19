@@ -7,10 +7,11 @@ import time
 import json
 from datetime import datetime
 import pytz
+import smtplib
+import gmailoauth
 
 
 class TempDevice:
-    dbpath = ""
     deviceid = ""
     apikey = ""
     dashurl = ""
@@ -29,11 +30,34 @@ class TempDevice:
         return newAvgTemp, timestamp
 
 
+# TODO: Implement database
 class Database:
+    def __init__(self):
+        pass
+
     def writeTemp(self, deviceid, temp):
         pass
 
 
+# Sends a text via email to emails
+class Notifier:
+    emails = []
+    server = ""
+
+    def __init__(self, emails):
+        self.emails = emails
+
+
+    def notify(self, temp):
+        for email in self.emails:
+            sender = ""
+            subject = "Temperature warning"
+            msgHtml = "Test"
+            msgPlain = "Test"
+            gmailoauth.SendMessage(sender, email, subject, msgHtml, msgPlain)
+
+
+# Gets devices from a json dictionary formatted as deviceid: apikey
 def getDevices(credspath):
     credspath = Path(credspath)
     devices = []
@@ -46,15 +70,17 @@ def getDevices(credspath):
 
 if __name__ == "__main__":
     # List of all temperature monitoring devices
-    devices = getDevices("./creds.json")
+    devices = getDevices("./tempcreds.json")
+    n = Notifier([""])
+    n.notify(0)
     while True:
         for device in devices:
             try:
                 newAvgTemp, timestamp = device.getTemp()
                 timeformat = datetime.fromtimestamp(timestamp).astimezone(
                     pytz.timezone('America/Edmonton')).strftime('%e %b %Y %I:%M:%S%p')
-                print("Device: {} Avg Temp: {} Time: {} ({})".format(device.deviceid, newAvgTemp,
-                                                                     timestamp, timeformat))
+                print("{}:\t\tAvg Temp: {}\t\tTime: {} ({})".format(device.deviceid, newAvgTemp,
+                                                                    timestamp, timeformat))
             except Exception as e:
                 print(e)
         time.sleep(5)
